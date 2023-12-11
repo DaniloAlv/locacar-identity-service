@@ -23,5 +23,9 @@ namespace LocacaoDeCarros.Identity.API.Models
         [Required(ErrorMessage = "O campo {0} precisa ser informado!")]
         [MaxLength(11)]
         public string Cpf { get; set; }
+
+        [Required(ErrorMessage = "O campo {0} precisa ser informado!")]
+        [DataType(DataType.PhoneNumber)]
+        public string Telefone { get; set; }
     }
 }

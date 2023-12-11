@@ -1,6 +1,5 @@
-﻿using LocacaoDeCarros.Identity.API.Domain;
+﻿using LocacaoDeCarros.Identity.API.Models;
 using LocacaoDeCarros.Identity.API.Services;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LocacaoDeCarros.Identity.API.Controllers
@@ -10,7 +9,6 @@ namespace LocacaoDeCarros.Identity.API.Controllers
     public class IdentityController : ControllerBase
     {
         private readonly IIdentityService _identityService;
-        
 
         public IdentityController(IIdentityService identityService)
         {
@@ -18,12 +16,12 @@ namespace LocacaoDeCarros.Identity.API.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> CreateUser()
+        public async Task<IActionResult> CreateUser([FromBody] UserRegister userRegister)
         {
             try
             {
-
-                return Ok();
+                var result = await _identityService.Register(userRegister);
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -32,11 +30,12 @@ namespace LocacaoDeCarros.Identity.API.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login()
+        public async Task<IActionResult> Login([FromForm] UserLogin userLogin)
         {
             try
             {
-                return Ok();
+                var loginResponse = await _identityService.Login(userLogin);
+                return Ok(loginResponse);
             }
             catch (Exception ex)
             {
@@ -45,7 +44,7 @@ namespace LocacaoDeCarros.Identity.API.Controllers
         }
 
         [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword(string email)
+        public async Task<IActionResult> ForgotPassword([FromForm] string email)
         {
             try
             {
@@ -53,7 +52,7 @@ namespace LocacaoDeCarros.Identity.API.Controllers
                 string passwordResetToken = await _identityService.GenerateResetPasswordToken(user);
 
                 //Enviar por email o link com o id e token
-                return Ok();
+                return Ok(passwordResetToken);
             }
             catch (Exception ex)
             {
@@ -61,7 +60,7 @@ namespace LocacaoDeCarros.Identity.API.Controllers
             }
         }
 
-        [HttpPost("reset-password/{userId:string}/{resetToken:string}")]
+        [HttpPost("reset-password/{userId}/{resetToken}")]
         public async Task<IActionResult> ResetPassword([FromRoute] string userId, 
                                                        [FromRoute] string resetToken,
                                                        [FromBody] string newPassword)
@@ -72,6 +71,25 @@ namespace LocacaoDeCarros.Identity.API.Controllers
                 await _identityService.ResetPassword(user, resetToken, newPassword);
 
                 return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> GetRefreshToken([FromBody] Guid token)
+        {
+            try
+            {
+                var refreshToken = await _identityService.GetRefreshToken(token);
+
+                if (refreshToken is null)
+                    return BadRequest("Refresh Token inexistente ou não válido.");
+
+                var userResponse = await _identityService.GetUserResponse(refreshToken.UserEmail);
+                return Ok(userResponse);
             }
             catch (Exception ex)
             {
